@@ -1,0 +1,16 @@
+# frontend/Dockerfile
+FROM nginx:alpine
+
+WORKDIR /usr/share/nginx/html
+
+# デフォルトのNginx設定を削除
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy your exported frontend build (from reflex export)
+COPY frontend/ .
+
+# Nginx設定を上書き
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

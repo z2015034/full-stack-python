@@ -1,0 +1,29 @@
+# backend/Dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Node.js (LTS) と依存ユーティリティをインストール
+RUN apt-get update && \
+    apt-get install -y curl gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    node -v && npm -v && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# アプリケーションコードをコピー
+COPY backend/ .
+COPY rxconfig.py ./rxconfig.py
+
+# Python依存パッケージをインストール
+RUN python -m pip install --upgrade pip && \
+    pip install --no-cache-dir -r /app/requirements.txt && \
+    cd /app && reflex db init && reflex db makemigrations && reflex db migrate || true
+
+# Pythonパスを明示
+ENV PYTHONPATH=/app
+
+# バックエンド起動
+EXPOSE 8000
+
+CMD ["reflex", "run", "--backend-only", "--env", "prod", "--backend-port", "8000"]

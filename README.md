@@ -1,3 +1,70 @@
-# Pure Web Apps with Python
+# Reflex MVP アプリ
 
-This repo is a reference to our recent tutorial on using [Reflex](https://reflex.dev) to create full stack web applications using purely Python.
+このサンプルアプリケーションの実行・ビルドに関する手順の解説です。
+
+
+
+
+
+## セットアップ手順
+
+このリポジトリをローカルにクローンします。
+
+
+
+## 実行手順
+
+以下の手順で
+
+```bash
+# 現在の作業ディレクトリを確認します。
+pwd # 現在のディレクトリを確認。full-stack-pythonディレクトリにいると思うが、そうでない場合、先の手順でfull-stack-pythonディレクトリに移動すること
+
+# 現在のPythonのバージョンを確認します。
+python --version
+
+# ここで、3.10.18になっていない場合、pyenvで対象のバージョンをインストールします。
+pyenv versions # pyenvでインストールされているバージョンの確認。3.10.18が入って"いない"ことが確認できると思います。
+pyenv install 3.10.18
+pyenv versions # 再度、確認。3.10.18が入って"いる"ことが確認できると思います。
+
+# 再度、現在のPythonのバージョンを確認してください。
+python --version
+
+# 仮想化環境の作成
+python -m venv .venv # さまざまな流儀があると思いますが、ここでは.venvとして実行します。また、このプロジェクトの.gitignoreにも.venvで登録してあります。なんらかの事情で別の名前を使用する場合は、適宜、.gitignoreも修正して利用してください。
+
+# 仮想化環境の有効化
+source .venv/bin/actibate # 成功すると、プロンプトに(.venv)が追加されたと思います。
+
+
+
+
+
+# ---
+# nodeがインストールされていなくとも、Reflex実行時にインストールされますが、事前にインストールしておくとビルドの時間が短縮されます。
+# また、将来的にAIの利活用などで、nodeやnpmのお世話になる機会も多いため、nodeは入れておきましょう。
+
+# nodeのインストール確認
+node --version
+nvm list
+
+# データベースの初期化
+
+
+
+# MVPプロジェクトの実行
+
+
+```
+
+
+
+
+
+
+## ビルド手順
+
+
+
+## 

@@ -2,11 +2,7 @@
 
 このサンプルアプリケーションの実行・ビルドに関する手順の解説です。
 
-
-
-
-
-## セットアップ手順
+## ソースコードの入手
 
 現在、ローカルにこのリポジトリを持っていないとします。その場合、WebブラウザでGitHubにあるこのリポジトリを参照していると思いますので、このリポジトリをローカルにクローンします。
 WSLの環境の利用を前提として、説明を実施いたします。まず、Windows TerminalでWSLの環境へアクセスをします。リポジトリをクローンしたい場所へ移動します。
@@ -46,8 +42,11 @@ python --version
 python -m venv .venv # さまざまな流儀があると思いますが、ここでは.venvとして実行します。また、このプロジェクトの.gitignoreにも.venvで登録してあります。なんらかの事情で別の名前を使用する場合は、適宜、.gitignoreも修正して利用してください。
 
 # 仮想化環境の有効化
-source .venv/bin/actibate # 成功すると、プロンプトに(.venv)が追加されたと思います。
+source .venv/bin/actibate # 成功すると、プロンプトに(.venv)が追加されていれば、成功です。
 
+# Pythonパッケージのインストール
+pip install --upgrade pip
+pip install -r requirements.txt # これで、Reflexフレームワークと必要な依存関係パッケージがインストールされます。
 
 
 
@@ -62,16 +61,45 @@ nvm list
 
 # データベースの初期化
 
+```bash
+# このMVPアプリケーションは、ユーザデータの管理にSQLiteを利用しており、以下のコマンドでデータベースの作成、初期化を実施しておきます。
+reflex db init
+reflex db makemigrations
+reflex db migrate
+```
 
 
 # MVPプロジェクトの実行
 
+MVPアプリケーションを実行します。
+```bash
+reflex run # Reflexは、.webディレクトリにPythonのコードからReact（Next.js）をベースにしたJavaScriptを生成します。
+```
 
+また、このような警告が出ると思いますが、このMVPアプリケーションは、Reflex 0.5.3にもとづいて作成されており、0.8.3にアップグレードすると動作しませんので、ご注意ください。（記法やコマンド体系などが変わっており、プロジェクトのコードの修正が必要になります。）
+
+```bash
+Warning: Your version (0.5.3) of reflex is out of date. Upgrade to 0.8.13 with 'pip install reflex --upgrade'
+```
+
+以下の出力が得られれば、起動成功です。
+
+```bash
+App running at: http://localhost:3000
 ```
 
 ### 動作確認
 
-Webブラウザで、動作確認をしてみましょう。
+それでは、動作が出来ているか確認してみましょう。
+ますは、バックエンドが動作しているか確認します。
+
+```bash
+curl http://127.0.0.1:8000/ping # "pong"とレスポンスがあれば、バックエンドが動作しています。
+```
+
+つぎに、Webブラウザで、動作確認をしてみましょう。`http://localhost:3000` へアクセスします。以下のような表示がされれば成功です。
+
+![MVPアプリケーション](image.png)
 
 
 ## ビルド手順

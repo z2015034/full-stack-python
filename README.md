@@ -46,16 +46,6 @@ pip install --upgrade pip
 pip install -r requirements.txt # これで、Reflexフレームワークと必要な依存関係パッケージがインストールされます。
 
 
-
-
-# ---
-# nodeがインストールされていなくとも、Reflex実行時にインストールされますが、事前にインストールしておくとビルドの時間が短縮されます。
-# また、将来的にAIの利活用などで、nodeやnpmのお世話になる機会も多いため、nodeは入れておきましょう。
-
-# nodeのインストール確認
-node --version
-nvm list
-
 # データベースの初期化
 
 ```bash
@@ -99,7 +89,6 @@ curl http://127.0.0.1:8000/ping # "pong"とレスポンスがあれば、バッ�
 ![MVPアプリケーション](image.png)
 
 
-
 ## ビルド手順
 
 Docker環境でフロントエンドとバックエンドを実行する手順です。
@@ -137,69 +126,102 @@ bashスクリプトでは、コンテナイメージを作成するタイミン�
 - nginx.conf
 
 
+## 動作確認
 
+- バックエンドの確認
+  - ブラウザで`http://localhost:8000/ping`を開きます。
+  - "pong"と表示されれば動作成功です。
 
-また、フロントエンドの参照パスをローカル実行用ではなく、コンテナ用に参照先を変更するため、nginx.confを用意しておきます。（このリポジトリでは、すでに用意済み）
+- フロントエンドの確認
+  - ブラウザで`http://localhost:3000`を開きます。
+  - Reflexアプリが表示されればhttp://localhost:3000
 
-```conf
-# frontend/nginx.conf
-server {
-    listen 80;
-    server_name localhost;
-
-    # Serve static frontend files
-    location / {
-        root   /usr/share/nginx/html;
-        index  index.html index.htm;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Proxy API calls to backend
-    location /_api/ {
-        proxy_pass         http://reflex-backend:8000;
-        proxy_http_version 1.1;
-        proxy_set_header   Upgrade $http_upgrade;
-        proxy_set_header   Connection "upgrade";
-        proxy_set_header   Host $host;
-    }
-}
-```
-
-コンテナ用に参照先を変更とは、バックエンド用のコンテナを別に作成するため、そのコンテナへアクセスする必要があるため。ローカル実行では、ポート番号違いで、おなじlocalhostを参照している。
-
+- Dockerコマンドでも動作を確認しておきましょう。
+  - 確認用のTerminalをひとつ作成してください。
+  - それぞれコマンドで以下のような出力が確認できれば、正しくコンテナが動作しています。
 
 ```bash
-sudo docker compose build --no-cache
-sudo docker compose up
+$ sudo docker images # dockerイメージのリスト
+REPOSITORY                          TAG       IMAGE ID       CREATED         SIZE
+full-stack-python-reflex-backend    latest    a62603a79d10   7 minutes ago   450MB
+full-stack-python-reflex-frontend   latest    620d2c89b0e8   8 minutes ago   54.7MB
 
+$ sudo docker ps -a # dockerコンテナのリスト(停止中のコンテナも含めて表示)
+CONTAINER ID   IMAGE                               COMMAND                  CREATED         STATUS         PORTS                                         NAMES
+ebaa2b4d8740   full-stack-python-reflex-frontend   "/docker-entrypoint.…"   6 minutes ago   Up 6 minutes   0.0.0.0:3000->80/tcp, [::]:3000->80/tcp       reflex-frontend
+8be82646da50   full-stack-python-reflex-backend    "reflex run --backen…"   6 minutes ago   Up 6 minutes   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp   reflex-backend
 
+$ sudo docker network ls # dockerネットワークのリスト
+NETWORK ID     NAME                               DRIVER    SCOPE
+a58b8d998888   bridge                             bridge    local
+e5e1b6f4e337   full-stack-python_reflex-network   bridge    local
+4a05953a8d35   host                               host      local
+007b9988daa0   none                               null      local
+
+$ sudo docker compose ps -a # dockerコンテナのリスト(停止中のコンテナも含めて表示)　docker composeでの表示
+NAME              IMAGE                               COMMAND                  SERVICE           CREATED              STATUS              PORTS
+reflex-backend    full-stack-python-reflex-backend    "reflex run --backen…"   reflex-backend    About a minute ago   Up About a minute   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+reflex-frontend   full-stack-python-reflex-frontend   "/docker-entrypoint.…"   reflex-frontend   About a minute ago   Up About a minute   0.0.0.0:3000->80/tcp, [::]:3000->80/tcp
+
+$ sudo docker compose ls # dockerネットワークのリスト
+NAME                STATUS              CONFIG FILES
+full-stack-python   running(2)          /home/{user_dir}/work/full-stack-python/docker-compose.yml
+
+$ sudo docker compose config # docker composeで作成されたコンテナの構成一覧
+name: full-stack-python
+services:
+  reflex-backend:
+    build:
+      context: /home/{user_dir}/work/full-stack-python
+      dockerfile: backend/Dockerfile
+    container_name: reflex-backend
+    networks:
+      reflex-network: null
+    ports:
+      - mode: ingress
+        target: 8000
+        published: "8000"
+        protocol: tcp
+  reflex-frontend:
+    build:
+      context: /home/{user_dir}/work/full-stack-python
+      dockerfile: frontend/Dockerfile
+    container_name: reflex-frontend
+    depends_on:
+      reflex-backend:
+        condition: service_started
+        required: true
+    networks:
+      reflex-network: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "3000"
+        protocol: tcp
+networks:
+  reflex-network:
+    name: full-stack-python_reflex-network
+    driver: bridge
 ```
-
-ブラウザで以下のURLを開くと応答を確認できます：
-
-http://localhost:8000/ping
-
-（バックエンドのFastAPIが返す{"ping": "pong"}）
-
-http://localhost:3000
-
-（Nginxで配信されるReactフロント）
-
-
 
 ## Dockerコンテナの削除
 
-sudo docker compose down --rmi all --volumes
+現在動作中のコンテナをすべて停止し、かつコンテナイメージを削除します。
 
+```bash
+sudo docker compose down --rmi all
+
+# 以下のコマンドで不要なリソースが削除されていることを確認します。
 sudo docker compose ps -a
 sudo docker network ls
 sudo docker volume ls
 sudo docker images
+```
 
+注意: `sudo docker network ls`を実行すると、以下のように複数のネットワークが確認できると思いますが、これらはDockerが利用する内部用のネットワーク（コンテナ間通信やホストとの通信など）ですので、残っていても問題ありません。
 
-
-
-sudo docker images
-sudo docker rmi <IMAGE_ID>
-sudo docker image prune -a
-sudo docker system prune -a
+$ sudo docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+a58b8d998888   bridge    bridge    local
+4a05953a8d35   host      host      local
+007b9988daa0   none      null      local

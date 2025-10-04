@@ -21,12 +21,9 @@ VS Codeが起動し、リポジトリの内容が左ペインのExprolerに表�
 
 ## ローカル実行手順
 
-以下の手順で
+ローカル環境で実行する前に必要な設定を実施します。
 
 ```bash
-# 現在の作業ディレクトリを確認します。
-pwd # 現在のディレクトリを確認。full-stack-pythonディレクトリにいると思うが、そうでない場合、先の手順でfull-stack-pythonディレクトリに移動すること
-
 # 現在のPythonのバージョンを確認します。
 python --version
 
@@ -62,7 +59,7 @@ nvm list
 # データベースの初期化
 
 ```bash
-# このMVPアプリケーションは、ユーザデータの管理にSQLiteを利用しており、以下のコマンドでデータベースの作成、初期化を実施しておきます。
+# このMVPアプリケーションは、データベースの管理にSQLAlchemy(Alembic)を利用しており、以下のコマンドでデータベースの作成、初期化を実施しておきます。
 reflex db init
 reflex db makemigrations
 reflex db migrate
@@ -106,7 +103,113 @@ curl http://127.0.0.1:8000/ping # "pong"とレスポンスがあれば、バッ�
 
 Docker環境でフロントエンドとバックエンドを実行する手順です。
 
+```bash
+reflex export # backend.zip, frontend.zipが生成されます。
+
+reflex export --frontend-path . --backend-path .
+
+# 生成されたzipファイルを展開します。
+unzip backend.zip -d backend
+unzip frontend.zip -d frontend
+```
+
+backend, frontendディレクトリ配下にDockerfileを作成します。
+
+backend用 Dockerfile
+```Dockerfile
+# backend/Dockerfile
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code (including rxconfig.py)
+COPY . .
+
+# Reflex uses uvicorn (0.5.3 では run で起動)
+EXPOSE 8000
+
+CMD ["reflex", "run", "--backend-only", "--env", "prod", "--backend-port", "8000"]
+```
+
+frontend用 DOckerfile
+```Dockerfile
+# frontend/Dockerfile
+FROM nginx:alpine
+
+# Remove default conf
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy your exported frontend build (from reflex export)
+COPY . /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+また、これらのコンテナを統制するdocker-composeファイルを作成します。
+
+```yaml
+services:
+  reflex-backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: reflex-backend
+    ports:
+      - "8000:8000"
+    networks:
+      - reflex-network
+
+  reflex-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: reflex-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - reflex-backend
+    networks:
+      - reflex-network
+
+networks:
+  reflex-network:
+    driver: bridge
 ```
 
 
+
+また、フロントエンドの参照パスをローカル実行用ではなく、コンテナ用に参照先を変更するため、nginx.confを用意しておきます。（このリポジトリでは、すでに用意済み）
+
+```conf
+# frontend/nginx.conf
+server {
+    listen 80;
+    server_name localhost;
+
+    # Serve static frontend files
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy API calls to backend
+    location /_api/ {
+        proxy_pass         http://reflex-backend:8000;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection "upgrade";
+        proxy_set_header   Host $host;
+    }
+}
 ```
+
+コンテナ用に参照先を変更とは、バックエンド用のコンテナを別に作成するため、そのコンテナへアクセスする必要があるため。ローカル実行では、ポート番号違いで、おなじlocalhostを参照している。

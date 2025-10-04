@@ -99,90 +99,43 @@ curl http://127.0.0.1:8000/ping # "pong"とレスポンスがあれば、バッ�
 ![MVPアプリケーション](image.png)
 
 
+
 ## ビルド手順
 
 Docker環境でフロントエンドとバックエンドを実行する手順です。
-ローカル実行をせずにビルドのみ実行する場合、
+ビルドについては、docker_image_build.shにて実行手順をbashスクリプトにまとめてあります。
+それほど、複雑なスクリプトではないので、読めばわかると思いますが、一通りの手順を以下にまとめます。
+
+1. ビルド用にPythonの仮想化環境を作成します。
+2. ビルドに必要なpipパッケージをインストールします。
+3. reflexコマンドでフロントエンド用、バックエンド用のファイルをExportします。
+4. Exportされたファイルは、Zipにて生成されるため、それらを解凍します。
+5. ビルド用のDockerfileを適切なディレクトリに配置します。
+6. Docker Composeでビルドを実行します。
+7. Docker Composeで作成したイメージを起動します。
+
+ビルドの実行には、以下のコマンドを実行してください。
 
 ```bash
-reflex build # ローカル実行をせずにビルドのみ実行する場合、先にビルドを実行します。
-reflex export # backend.zip, frontend.zipが生成されます。
-
-# 生成されたzipファイルを展開します。
-unzip backend.zip -d backend
-unzip frontend.zip -d frontend
+bash docker_image_build.sh
 ```
 
-backend, frontendディレクトリ配下にDockerfileを作成します。
+## 各種ファイルの説明
+ビルドに関連した各種ファイルの役割を解説します。
 
-backend用 Dockerfile
-```Dockerfile
-# backend/Dockerfile
-FROM python:3.10-slim
+Docker関連
 
-WORKDIR /app
+以下のファイルは、それぞれフロントエンドとバックエンドのDockerfileになります。先に説明したbashスクリプトで、`backend`ディレクトリ、`frontend`ディレクトリに配置されます。
+- Dockerfile_frontend
+- Dockerfile_backend
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+docker-composeのファイルです。上記のDokcerfileで作成したコンテナイメージを起動、複数のコンテナの制御をおこないます。
+- docker-compose.yml
 
-# Copy the application code (including rxconfig.py)
-COPY . .
+ローカル環境では、意識しなくてもよかったフロントエンドとバックエンドの連携（アクセスポートでのみ識別）ですが、コンテナイメージ化することで、アクセス先のコンテナを検知する必要があります。そのため、フロントエンドコンテナ内でバックエンドへのアクセスが発生した場合、そのアクセスをどこへルーティングさせるかの情報が必要です。その情報は、Webサーバの設定でリバースプロキシを設定することで実現しています。
+bashスクリプトでは、コンテナイメージを作成するタイミングで、コンテナイメージ内のNGINXの設定ファイルを上書きしています。
+- nginx.conf
 
-# Reflex uses uvicorn (0.5.3 では run で起動)
-EXPOSE 8000
-
-CMD ["reflex", "run", "--backend-only", "--env", "prod", "--backend-port", "8000"]
-```
-
-frontend用 DOckerfile
-```Dockerfile
-# frontend/Dockerfile
-FROM nginx:alpine
-
-# Remove default conf
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Copy your exported frontend build (from reflex export)
-COPY . /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-また、これらのコンテナを統制するdocker-composeファイルを作成します。
-
-```yaml
-services:
-  reflex-backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: reflex-backend
-    ports:
-      - "8000:8000"
-    networks:
-      - reflex-network
-
-  reflex-frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
-    container_name: reflex-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - reflex-backend
-    networks:
-      - reflex-network
-
-networks:
-  reflex-network:
-    driver: bridge
-```
 
 
 
@@ -213,3 +166,40 @@ server {
 ```
 
 コンテナ用に参照先を変更とは、バックエンド用のコンテナを別に作成するため、そのコンテナへアクセスする必要があるため。ローカル実行では、ポート番号違いで、おなじlocalhostを参照している。
+
+
+```bash
+sudo docker compose build --no-cache
+sudo docker compose up
+
+
+```
+
+ブラウザで以下のURLを開くと応答を確認できます：
+
+http://localhost:8000/ping
+
+（バックエンドのFastAPIが返す{"ping": "pong"}）
+
+http://localhost:3000
+
+（Nginxで配信されるReactフロント）
+
+
+
+## Dockerコンテナの削除
+
+sudo docker compose down --rmi all --volumes
+
+sudo docker compose ps -a
+sudo docker network ls
+sudo docker volume ls
+sudo docker images
+
+
+
+
+sudo docker images
+sudo docker rmi <IMAGE_ID>
+sudo docker image prune -a
+sudo docker system prune -a

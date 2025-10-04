@@ -105,6 +105,7 @@ Docker環境でフロントエンドとバックエンドを実行する手順�
 ローカル実行をせずにビルドのみ実行する場合、
 
 ```bash
+reflex build # ローカル実行をせずにビルドのみ実行する場合、先にビルドを実行します。
 reflex export # backend.zip, frontend.zipが生成されます。
 
 # 生成されたzipファイルを展開します。

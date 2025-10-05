@@ -86,7 +86,7 @@ curl http://127.0.0.1:8000/ping # "pong"とレスポンスがあれば、バッ�
 
 つぎに、Webブラウザで、動作確認をしてみましょう。`http://localhost:3000` へアクセスします。以下のような表示がされれば成功です。
 
-![MVPアプリケーション](image.png)
+![MVPアプリケーション](images/image.png)
 
 
 ## ビルド手順
@@ -220,8 +220,10 @@ sudo docker images
 
 注意: `sudo docker network ls`を実行すると、以下のように複数のネットワークが確認できると思いますが、これらはDockerが利用する内部用のネットワーク（コンテナ間通信やホストとの通信など）ですので、残っていても問題ありません。
 
+```
 $ sudo docker network ls
 NETWORK ID     NAME      DRIVER    SCOPE
 a58b8d998888   bridge    bridge    local
 4a05953a8d35   host      host      local
 007b9988daa0   none      null      local
+```

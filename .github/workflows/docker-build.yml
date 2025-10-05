@@ -89,7 +89,7 @@ jobs:
       # --- タグ付けしてPush ---
       - name: Tag & Push images to GHCR
         run: |
-          GHCR=ghcr.io/${{ github.repository }}
+          GHCR=ghcr.io/${{ github.actor }}
 
           echo "🚀 タグ付けとPush開始"
 

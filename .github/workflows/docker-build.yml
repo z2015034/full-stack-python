@@ -42,11 +42,11 @@ jobs:
       # --- Zip展開（Reflex 0.5.3対応） ---
       - name: Unzip exported build
         run: |
-          mkdir -p export_dir/frontend export_dir/backend
+          mkdir -p frontend backend
 
           # フロントエンドZipを展開
           if [ -f frontend.zip ]; then
-            unzip -o frontend.zip -d export_dir/frontend
+            unzip -o frontend.zip -d frontend
             echo "✅ frontend.zip を展開しました"
           else
             echo "⚠️ frontend.zip が見つかりません"
@@ -54,27 +54,21 @@ jobs:
 
           # バックエンドZipを展開
           if [ -f backend.zip ]; then
-            unzip -o backend.zip -d export_dir/backend
+            unzip -o backend.zip -d backend
             echo "✅ backend.zip を展開しました"
           else
             echo "⚠️ backend.zip が見つかりません"
           fi
 
           ls -R export_dir
-          echo "✅ 展開完了: export_dir 内に frontend/, backend/ が作成されました"
+          echo "✅ 展開完了: frontend/, backend/ が作成されました"
 
       # --- Dockerfile配置 ---
       - name: Copy Dockerfiles into export directories
         run: |
-          cp Dockerfile_backend export_dir/backend/Dockerfile
-          cp Dockerfile_frontend export_dir/frontend/Dockerfile
+          cp Dockerfile_backend backend/Dockerfile
+          cp Dockerfile_frontend frontend/Dockerfile
           echo "✅ Dockerfile を配置しました"
-
-      # --- docker-compose.yml配置 ---
-      - name: Copy docker-compose.yml into export directory
-        run: |
-          cp docker-compose.yml export_dir/
-          echo "✅ docker-compose.yml を export_dir にコピーしました"
 
       # GitHub Container Registryへログイン
       - name: Log in to GitHub Container Registry
@@ -87,7 +81,6 @@ jobs:
       # --- docker-compose build ---
       - name: Docker Compose Build
         run: |
-          cd export_dir
           docker compose build
           echo "✅ docker-compose build 完了"
 

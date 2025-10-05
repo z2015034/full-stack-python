@@ -59,8 +59,7 @@ jobs:
           else
             echo "⚠️ backend.zip が見つかりません"
           fi
-
-          ls -R export_dir
+          
           echo "✅ 展開完了: frontend/, backend/ が作成されました"
 
       # --- Dockerfile配置 ---

@@ -59,7 +59,7 @@ jobs:
           else
             echo "⚠️ backend.zip が見つかりません"
           fi
-          
+
           echo "✅ 展開完了: frontend/, backend/ が作成されました"
 
       # --- Dockerfile配置 ---
@@ -83,14 +83,25 @@ jobs:
           docker compose build
           echo "✅ docker-compose build 完了"
 
+      - name: Debug Docker images
+        run: docker images
+
       # --- タグ付けしてPush ---
       - name: Tag & Push images to GHCR
         run: |
           GHCR=ghcr.io/${{ github.repository }}
 
           echo "🚀 タグ付けとPush開始"
-          docker tag reflex-backend $GHCR/reflex-backend:latest
-          docker tag reflex-frontend $GHCR/reflex-frontend:latest
+
+          BACKEND_IMAGE=$(docker images --format "{{.Repository}}" | grep backend | head -n 1)
+          FRONTEND_IMAGE=$(docker images --format "{{.Repository}}" | grep frontend | head -n 1)
+
+          echo "Detected images:"
+          echo "  backend -> $BACKEND_IMAGE"
+          echo "  frontend -> $FRONTEND_IMAGE"
+
+          docker tag $BACKEND_IMAGE $GHCR/reflex-backend:latest
+          docker tag $FRONTEND_IMAGE $GHCR/reflex-frontend:latest
 
           docker push $GHCR/reflex-backend:latest
           docker push $GHCR/reflex-frontend:latest

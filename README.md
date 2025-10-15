@@ -39,7 +39,7 @@ python --version
 python -m venv .venv # さまざまな流儀があると思いますが、ここでは.venvとして実行します。また、このプロジェクトの.gitignoreにも.venvで登録してあります。なんらかの事情で別の名前を使用する場合は、適宜、.gitignoreも修正して利用してください。
 
 # 仮想化環境の有効化
-source .venv/bin/actibate # 成功すると、プロンプトに(.venv)が追加されていれば、成功です。
+source .venv/bin/activate # 成功すると、プロンプトに(.venv)が追加されていれば、成功です。
 
 # Pythonパッケージのインストール
 pip install --upgrade pip
